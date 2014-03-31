@@ -29,9 +29,6 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
       <button ng-click="move(+1, $event)" class="angular-date-range-picker__next-month">&#9654;</button>
     </div>
     <div class="angular-date-range-picker__panel">
-      <div>
-        Select range: <select ng-click="prevent_select($event)" ng-model="quick" ng-options="e.range as e.label for e in quickList"></select>
-      </div>
       <div class="angular-date-range-picker__buttons">
         <button ng-click="ok($event)" class="angular-date-range-picker__apply">Apply</button>
         <a ng-click="hide($event)" class="angular-date-range-picker__cancel">cancel</a>
@@ -39,70 +36,29 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
     </div>
   </div>
   """
-  CUSTOM = "CUSTOM"
 
   restrict: "AE"
   replace: true
   template: """
   <span class="angular-date-range-picker__input">
-    <span ng-show="model">{{ model.start.format("ll") }} - {{ model.end.format("ll") }}</span>
+    <span ng-show="model">{{ model.start.format(dateFormat) }} - {{ model.end.format(dateFormat) }}</span>
     <span ng-hide="model">Select date range</span>
   </span>
   """
   scope:
     model: "=ngModel" # can't use ngModelController, we need isolated scope
-    customSelectOptions: "="
+    format: "@"
+    template: "="
 
   link: ($scope, element, attrs) ->
-    $scope.quickListDefinitions = $scope.customSelectOptions
-    $scope.quickListDefinitions ?= [
-      {
-        label: "This week",
-        range: moment().range(
-          moment().startOf("week").startOf("day"),
-          moment().endOf("week").startOf("day")
-        )
-      }
-      {
-        label: "Next week",
-        range: moment().range(
-          moment().startOf("week").add(1, "week").startOf("day"),
-          moment().add(1, "week").endOf("week").startOf("day")
-        )
-      }
-      {
-        label: "This fortnight",
-        range: moment().range(
-          moment().startOf("week").startOf("day"),
-          moment().add(1, "week").endOf("week").startOf("day")
-        )
-      }
-      {
-        label: "This month",
-        range: moment().range(
-          moment().startOf("month").startOf("day"),
-          moment().endOf("month").startOf("day")
-        )
-      }
-      {
-        label: "Next month",
-        range: moment().range(
-          moment().startOf("month").add(1, "month").startOf("day"),
-          moment().add(1, "month").endOf("month").startOf("day")
-        )
-      }
-    ]
-    $scope.quick = null
+    $scope.dateFormat = $scope.format
+    $scope.pickerTemplate = $scope.template
+    $scope.dateFormat ?= 'll'
+    $scope.pickerTemplate ?= pickerTemplate
     $scope.range = null
     $scope.selecting = false
     $scope.visible = false
     $scope.start = null
-
-    _makeQuickList = (includeCustom = false) ->
-      $scope.quickList = []
-      $scope.quickList.push(label: "Custom", range: CUSTOM) if includeCustom
-      for e in $scope.quickListDefinitions
-        $scope.quickList.push(e)
 
     _calculateRange = () ->
       $scope.range = if $scope.selection
@@ -114,19 +70,6 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
           moment().startOf("month").subtract(1, "month").startOf("day"),
           moment().endOf("month").add(1, "month").startOf("day")
         )
-
-    _checkQuickList = () ->
-      return unless $scope.selection
-      for e in $scope.quickList
-        if e.range != CUSTOM and $scope.selection.start.startOf("day").unix() == e.range.start.startOf("day").unix() and
-            $scope.selection.end.startOf("day").unix() == e.range.end.startOf("day").unix()
-          $scope.quick = e.range
-          _makeQuickList()
-          return
-
-      $scope.quick = CUSTOM
-      _makeQuickList(true)
-
 
     _prepare = () ->
       $scope.months = []
@@ -161,8 +104,6 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
         if !m.weeks[0]
           m.weeks.splice(0, 1)
 
-      _checkQuickList()
-
     $scope.show = () ->
       $scope.selection = $scope.model
       _calculateRange()
@@ -173,10 +114,6 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
       $event?.stopPropagation?()
       $scope.visible = false
       $scope.start = null
-
-    $scope.prevent_select = ($event) ->
-      $event?.stopPropagation?()
-
 
     $scope.ok = ($event) ->
       $event?.stopPropagation?()
@@ -208,19 +145,11 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
     $scope.handlePickerClick = ($event) ->
       $event?.stopPropagation?()
 
-    $scope.$watch "quick", (q, o) ->
-      return if !q || q == CUSTOM
-      $scope.selection = $scope.quick
-      $scope.selecting = false
-      $scope.start = null
-      _calculateRange()
-      _prepare()
-
-    $scope.$watch "customSelectOptions", (value) ->
-      $scope.quickListDefinitions = value
+    $scope.$watch "format", (value) -> $scope.dateFormat = value
+    $scope.$watch "template", (value) -> $scope.pickerTemplate = value
 
     # create DOM and bind event
-    domEl = $compile(angular.element(pickerTemplate))($scope)
+    domEl = $compile(angular.element($scope.pickerTemplate))($scope)
     element.append(domEl)
 
     element.bind "click", (e) ->
@@ -237,7 +166,6 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
     $scope.$on '$destroy', ->
       angular.element(document).unbind 'click', documentClickFn
 
-    _makeQuickList()
     _calculateRange()
     _prepare()
 ]
