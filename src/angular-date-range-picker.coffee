@@ -47,6 +47,7 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
   """
   scope:
     model: "=ngModel" # can't use ngModelController, we need isolated scope
+    change: "&ngChange"
     format: "@"
     template: "="
 
@@ -147,6 +148,7 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
 
     $scope.$watch "format", (value) -> $scope.dateFormat = value
     $scope.$watch "template", (value) -> $scope.pickerTemplate = value
+    $scope.$watch "model", $scope.change
 
     # create DOM and bind event
     domEl = $compile(angular.element($scope.pickerTemplate))($scope)
