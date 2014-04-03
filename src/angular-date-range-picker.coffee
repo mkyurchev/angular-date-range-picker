@@ -62,13 +62,13 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
 
     _calculateRange = () ->
       $scope.range = if $scope.selection
-        start = $scope.selection.start.clone().startOf("month").startOf("day")
-        end = start.clone().add(2, "months").endOf("month").startOf("day")
+        end = $scope.selection.end.clone().endOf("month").startOf("day")
+        start = end.clone().subtract(1, "month").startOf("month").startOf("day")
         moment().range(start, end)
       else
         moment().range(
           moment().startOf("month").subtract(1, "month").startOf("day"),
-          moment().endOf("month").add(1, "month").startOf("day")
+          moment().endOf("month").startOf("day")
         )
 
     _prepare = () ->
@@ -138,7 +138,7 @@ angular.module("dateRangePicker").directive "dateRangePicker", ["$compile", ($co
       $event?.stopPropagation?()
       $scope.range = moment().range(
         $scope.range.start.add(n, 'months').startOf("month").startOf("day"),
-        $scope.range.start.clone().add(2, "months").endOf("month").startOf("day")
+        $scope.range.start.clone().add(1, "month").endOf("month").startOf("day")
       )
       _prepare()
 
